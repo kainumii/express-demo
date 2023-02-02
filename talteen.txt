@@ -1,0 +1,120 @@
+app.get("/api/todoslist", (req, res) => {
+  res.send(todos_list);
+});
+
+app.get("/api/todoslist/:id", (req, res) => {
+  var id_number = parseInt(req.params.id);
+  var todo = todos_list.find((t) => t.id === id_number);
+  if (!todo) {
+    res.status(400).send("not found");
+    return;
+  }
+  res.send(todo);
+});
+
+app.post("/api/todoslist", (req, res) => {
+  const new_todo = {
+    id: todos_list.length + 1,
+    title: req.body.title,
+    completed: req.body.completed,
+  };
+
+  todos_list.push(new_todo);
+
+  res.send(new_todo);
+});
+
+***
+
+app.get("/extapi/todos", (req, res) => {
+  fetch("https://jsonplaceholder.typicode.com/todos")
+    .then((response) => response.json()) // one extra step
+    .then((data) => {
+      console.log(data);
+
+      res.send(data);
+    })
+    .catch((error) => console.error(error));
+});
+
+app.get("/extapi/todos/:todo_id", (req, res) => {
+  // res.send("extapi");
+
+  // axios
+  // axios.get("https://jsonplaceholder.typicode.com/todos/1").then(
+  //   (response) => {
+  //     console.log(response.data);
+  //   },
+  //   (error) => {
+  //     console.log(error);
+  //   }
+  // );
+
+  // fetch()
+  fetch(`https://jsonplaceholder.typicode.com/todos/${req.params.todo_id}`)
+    .then((response) => response.json()) // one extra step
+    .then((data) => {
+      console.log(data);
+      console.log(JSON.stringify(data)); // string
+
+      console.log(JSON.parse(JSON.stringify(data))); // JSON.parse() is the function that converts back the JSON String into Objects and then we can access them by their property name.
+
+      try {
+        fs.writeFileSync("data.json", JSON.stringify(data));
+      } catch (err) {
+        console.error(err);
+      }
+      res.send(data);
+    })
+    .catch((error) => console.error(error));
+});
+
+app.post("/extapi/todos", (req, res) => {
+  const schema = Joi.object({
+    title: Joi.string().min(5).required(),
+    userId: Joi.number().required(),
+  });
+
+  const result = schema.validate({
+    title: req.body.title,
+    userId: req.body.userId,
+  });
+
+  if (result.error) {
+    return res.status(400).send(result.error.details[0].message);
+  }
+
+  fetch("https://jsonplaceholder.typicode.com/todos", {
+    method: "POST",
+    body: JSON.stringify({
+      title: req.body.title,
+      completed: req.body.completed,
+      userId: req.body.userId,
+    }),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  })
+    .then((response) => response.json())
+    .then((json) => {
+      res.send(json);
+    });
+});
+
+
+app.put("/extapi/todos/:id", (req, res) => {
+  fetch(`https://jsonplaceholder.typicode.com/todos/${req.params.id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      id: req.params.id,
+      title: "foo2",
+      body: "bar2",
+      userId: 1,
+    }),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  })
+    .then((response) => response.json())
+    .then((json) => res.send(json));
+});
